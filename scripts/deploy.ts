@@ -1,14 +1,17 @@
-const { promisify } = require('util');
-const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
-const env = require('node-env-file');
-const AWS = require("aws-sdk");
-const mime = require('mime-types');
+import { promisify } from 'util';
+import chalk from 'chalk';
+// synthetic default imports doesn't work with node scripts
+import * as fs from 'fs';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+import * as AWS from 'aws-sdk';
+import * as mime from 'mime-types';
 
 const wait = (delay = 100) => new Promise(resolve => setTimeout(resolve, delay));
 
-env('./.env');
+dotenv.config({
+  path: './.env'
+});
 
 const {
     BUCKET: Bucket,
@@ -36,22 +39,25 @@ const s3PutObject = promisify(s3.putObject).bind(s3);
 const cloudFrontCreateInvalidation = promisify(cloudfront.createInvalidation).bind(cloudfront);
 const cloudFrontGetInvalidation = promisify(cloudfront.getInvalidation).bind(cloudfront);
 
-async function invalidate(distributionId) {
+async function invalidate(distributionId: string) {
+    // TODO: why below doesn't work?
+    // const pathsToInvalidate = ['/index.html'];
+    const pathsToInvalidate = ['/*'];
     return await cloudFrontCreateInvalidation({
         DistributionId: distributionId,
         InvalidationBatch: {
             CallerReference: String(+new Date()),
             Paths: {
-              Quantity: 1,
-              Items: ["/*"]
+              Quantity: pathsToInvalidate.length,
+              Items: pathsToInvalidate,
             }
         }
     });
 }
 
 async function checkInvalidation(DistributionId, Id) {
-    const { Status } = await cloudFrontGetInvalidation({ DistributionId, Id });
-    return Status;
+  const { Status } = await cloudFrontGetInvalidation({ DistributionId, Id });
+  return Status;
 }
 
 async function cleanBucket() {
@@ -66,8 +72,8 @@ async function cleanBucket() {
             Delete: { Objects: objectsToDelete }
         });
 
-        Deleted.forEach(object => console.log(chalk.red(" - " + object.Key)));
-        Errors.forEach(object => console.log(chalk.red(" * " + object)));
+        Deleted.forEach(object => console.log(chalk.red(' - ' + object.Key)));
+        Errors.forEach(object => console.log(chalk.red(' * ' + object)));
     }
 }
 
@@ -77,18 +83,18 @@ async function uploadFile(filePath) {
     const result = await s3PutObject({
         Key: key,
         Body: fs.readFileSync(filePath),
-        ACL: "public-read",
+        ACL: 'public-read',
         ContentType: mimeType,
         CacheControl: `max-age=${process.env.AWS_CACHE_CONTROL || 60 * 60 * 24 * 7}`
     });
 
-    console.log(chalk.green(" + " + key));
+    console.log(chalk.green(' + ' + key));
 
     return result;
 }
 
 function prepareUploadMeta(filePath) {
-    let key = filePath.split("dist/angular-s3/")[1];
+    const key = filePath.split('dist/angular-s3/')[1];
     const mimeType = mime.lookup(path.extname(filePath));
 
     return { key, mimeType };
@@ -104,41 +110,41 @@ async function recursivelyUpload(directory) {
             const isDirectory = fs.lstatSync(filePath).isDirectory();
 
             return isDirectory
-                ? recursivelyUpload(directory + "/" + fileName)
+                ? recursivelyUpload(directory + '/' + fileName)
                 : uploadFile(filePath);
         })
     );
 }
 
 async function runDeploy() {
-    console.log("[✈    ]", chalk.blue("Starting deploy"));
+    console.log('[✈    ]', chalk.blue('Starting deploy'));
 
-    console.log("[ ✈   ]", chalk.red("DELETING DEPENDENCIES FROM S3 BUCKET"));
+    console.log('[ ✈   ]', chalk.red('DELETING DEPENDENCIES FROM S3 BUCKET'));
     await cleanBucket();
 
-    console.log("[  ✈  ]", chalk.green("UPLOADING FILES TO S3 BUCKET"));
-    await recursivelyUpload("./dist");
+    console.log('[  ✈  ]', chalk.green('UPLOADING FILES TO S3 BUCKET'));
+    await recursivelyUpload('./dist');
 
-    console.log("[   ✈ ]", chalk.magenta("INVALIDATING CLOUDFRONT DISTRIBUTION"));
+    console.log('[   ✈ ]', chalk.magenta('INVALIDATING CLOUDFRONT DISTRIBUTION'));
     await runAndVerifyInvalidation(DistributionId);
 
-    console.log("[    ✈]", chalk.blue("Deploy successful!"));
+    console.log('[    ✈]', chalk.blue('Deploy successful!'));
 }
 
 async function runAndVerifyInvalidation(distributionId) {
     const result = await invalidate(distributionId);
 
-    if (result.Invalidation.Status !== "Completed") {
-        process.stdout.write("waiting for cdn cache invalidation to complete...");
+    if (result.Invalidation.Status !== 'Completed') {
+        process.stdout.write('waiting for cdn cache invalidation to complete...');
         const startTime = new Date();
         let status = result.Invalidation.Status;
 
-        while (status !== "Completed") {
+        while (status !== 'Completed') {
             await wait(1000);
-            process.stdout.write(".");
+            process.stdout.write('.');
             status = await checkInvalidation(distributionId, result.Invalidation.Id);
         }
-        process.stdout.write(` done (${Math.round((new Date() - startTime) / 1000)}s)\n`);
+        process.stdout.write(` done (${Math.round((new Date().getTime() - startTime.getTime()) / 1000)}s)\n`);
     }
 }
 
