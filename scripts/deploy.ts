@@ -1,3 +1,5 @@
+// TODO: clean up types
+
 import { promisify } from 'util';
 import chalk from 'chalk';
 // synthetic default imports doesn't work with node scripts
