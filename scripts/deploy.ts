@@ -55,8 +55,8 @@ async function invalidate(distributionId: string) {
     });
 }
 
-async function checkInvalidation(DistributionId, Id) {
-  const { Status } = await cloudFrontGetInvalidation({ DistributionId, Id });
+async function checkInvalidation(distributionId, Id) {
+  const { Status } = await cloudFrontGetInvalidation({ distributionId, Id });
   return Status;
 }
 
