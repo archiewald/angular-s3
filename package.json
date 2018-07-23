@@ -8,7 +8,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "deploy": "ng build && ts-node scripts/deploy.ts"
+    "deploy": "ng build && ts-node scripts/deploy.ts",
+    "deploy-no-build": "ts-node scripts/deploy.ts"
   },
   "private": true,
   "dependencies": {

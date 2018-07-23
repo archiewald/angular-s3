@@ -13,25 +13,18 @@ import {promisify} from "util";
 const wait = (delay = 100) =>
     new Promise(resolve => setTimeout(resolve, delay));
 
-dotenv.config({
-    path: "./.env",
-});
+const awsCredentials = readConfig();
 
-const {
-    BUCKET: Bucket,
-    AWS_ACCESS_KEY: accessKeyId,
-    AWS_SECRET_ACCESS_KEY: secretAccessKey,
-    AWS_CLOUDFRONT_DISTRIBUTION_ID: DistributionId,
-} = process.env;
-
-// Setup AWS S3 upload.
 AWS.config.update({
-    credentials: {accessKeyId, secretAccessKey},
+    credentials: {
+        accessKeyId: awsCredentials.accessKeyId,
+        secretAccessKey: awsCredentials.secretAccessKey,
+    },
 });
 
 const s3 = new AWS.S3({
     apiVersion: "2006-03-01",
-    params: {Bucket},
+    params: {Bucket: awsCredentials.bucket},
 });
 
 const cloudfront = new AWS.CloudFront();
@@ -43,33 +36,57 @@ const s3PutObject = promisify(s3.putObject).bind(s3);
 const cloudFrontCreateInvalidation = promisify(
     cloudfront.createInvalidation
 ).bind(cloudfront);
+
 const cloudFrontGetInvalidation = promisify(cloudfront.getInvalidation).bind(
     cloudfront
 );
 
-async function invalidate(distributionId: string) {
-    // TODO: why below doesn't work?
-    // const pathsToInvalidate = ["/index.html"];
-    const pathsToInvalidate = ["/*"];
-    return cloudFrontCreateInvalidation({
-        DistributionId: distributionId,
-        InvalidationBatch: {
-            CallerReference: String(+new Date()),
-            Paths: {
-                Quantity: pathsToInvalidate.length,
-                Items: pathsToInvalidate,
-            },
-        },
+runDeploy().catch(error => console.error(error, error.stack));
+
+async function runDeploy() {
+    console.log("[✈    ]", chalk.blue("Starting deploy"));
+
+    console.log("[ ✈   ]", chalk.red("DELETING DEPENDENCIES FROM S3 BUCKET"));
+    await cleanBucket(awsCredentials.bucket);
+
+    console.log("[  ✈  ]", chalk.green("UPLOADING FILES TO S3 BUCKET"));
+    await recursivelyUpload("./dist");
+
+    console.log(
+        "[   ✈ ]",
+        chalk.magenta("INVALIDATING CLOUDFRONT DISTRIBUTION")
+    );
+    await runAndVerifyInvalidation(awsCredentials.distributionId);
+
+    console.log("[    ✈]", chalk.blue("Deploy successful!"));
+}
+
+function readConfig() {
+    dotenv.config({
+        path: ".env",
     });
+
+    const {
+        AWS_BUCKET: bucket = "",
+        AWS_ACCESS_KEY: accessKeyId = "",
+        AWS_SECRET_ACCESS_KEY: secretAccessKey = "",
+        AWS_CLOUDFRONT_DISTRIBUTION_ID: distributionId = "",
+    } = process.env;
+
+    const credentials = {bucket, accessKeyId, secretAccessKey, distributionId};
+
+    if (
+        Object.keys(credentials).every(key => {
+            return credentials[key].length > 0;
+        })
+    ) {
+        return credentials;
+    }
+    throw new Error("Some AWS credential is missing");
 }
 
-async function checkInvalidation(distributionId, Id) {
-    const {Status} = await cloudFrontGetInvalidation({distributionId, Id});
-    return Status;
-}
-
-async function cleanBucket() {
-    const {Contents} = await s3ListObjects({Bucket});
+async function cleanBucket(bucket: string) {
+    const {Contents} = await s3ListObjects({Bucket: bucket});
 
     const objectsToDelete = Contents.map(object => object.Key).map(key => ({
         Key: key,
@@ -77,7 +94,7 @@ async function cleanBucket() {
 
     if (objectsToDelete.length > 0) {
         const {Deleted, Errors} = await s3DeleteObjects({
-            Bucket,
+            Bucket: bucket,
             Delete: {Objects: objectsToDelete},
         });
 
@@ -86,7 +103,23 @@ async function cleanBucket() {
     }
 }
 
-async function uploadFile(filePath) {
+async function recursivelyUpload(directory: string) {
+    const directoryPath = path.resolve(directory);
+    const paths = fs.readdirSync(directoryPath);
+
+    return Promise.all(
+        paths.map(fileName => {
+            const filePath = path.join(directoryPath, fileName);
+            const isDirectory = fs.lstatSync(filePath).isDirectory();
+
+            return isDirectory
+                ? recursivelyUpload(directory + "/" + fileName)
+                : uploadFile(filePath);
+        })
+    );
+}
+
+async function uploadFile(filePath: string) {
     const {key, mimeType} = prepareUploadMeta(filePath);
 
     // tslint:disable-next-line: no-magic-numbers
@@ -105,48 +138,14 @@ async function uploadFile(filePath) {
     return result;
 }
 
-function prepareUploadMeta(filePath) {
+function prepareUploadMeta(filePath: string) {
     const key = filePath.split("dist/angular-s3/")[1];
     const mimeType = mime.lookup(path.extname(filePath));
 
     return {key, mimeType};
 }
 
-async function recursivelyUpload(directory) {
-    const directoryPath = path.resolve(directory);
-    const paths = fs.readdirSync(directoryPath);
-
-    return Promise.all(
-        paths.map(fileName => {
-            const filePath = path.join(directoryPath, fileName);
-            const isDirectory = fs.lstatSync(filePath).isDirectory();
-
-            return isDirectory
-                ? recursivelyUpload(directory + "/" + fileName)
-                : uploadFile(filePath);
-        })
-    );
-}
-
-async function runDeploy() {
-    console.log("[✈    ]", chalk.blue("Starting deploy"));
-
-    console.log("[ ✈   ]", chalk.red("DELETING DEPENDENCIES FROM S3 BUCKET"));
-    await cleanBucket();
-
-    console.log("[  ✈  ]", chalk.green("UPLOADING FILES TO S3 BUCKET"));
-    await recursivelyUpload("./dist");
-
-    console.log(
-        "[   ✈ ]",
-        chalk.magenta("INVALIDATING CLOUDFRONT DISTRIBUTION")
-    );
-    await runAndVerifyInvalidation(DistributionId);
-
-    console.log("[    ✈]", chalk.blue("Deploy successful!"));
-}
-
-async function runAndVerifyInvalidation(distributionId) {
+async function runAndVerifyInvalidation(distributionId: string) {
     const result = await invalidate(distributionId);
     const oneSec = 1000;
 
@@ -174,4 +173,24 @@ async function runAndVerifyInvalidation(distributionId) {
     }
 }
 
-runDeploy().catch(error => console.error(error, error.stack));
+async function invalidate(distributionId: string) {
+    const pathsToInvalidate = ["/*"];
+    return cloudFrontCreateInvalidation({
+        DistributionId: distributionId,
+        InvalidationBatch: {
+            CallerReference: String(+new Date()),
+            Paths: {
+                Quantity: pathsToInvalidate.length,
+                Items: pathsToInvalidate,
+            },
+        },
+    });
+}
+
+async function checkInvalidation(distributionId: string, id: string) {
+    const {Status} = await cloudFrontGetInvalidation({
+        DistributionId: distributionId,
+        Id: id,
+    });
+    return Status;
+}
