@@ -29,17 +29,29 @@ const s3 = new AWS.S3({
 
 const cloudfront = new AWS.CloudFront();
 
-const s3ListObjects = promisify(s3.listObjects).bind(s3);
-const s3DeleteObjects = promisify(s3.deleteObjects).bind(s3);
-const s3PutObject = promisify(s3.putObject).bind(s3);
+const s3ListObjects: (
+    params: AWS.S3.ListObjectsRequest
+) => Promise<AWS.S3.ListObjectsOutput> = promisify(s3.listObjects).bind(s3);
 
-const cloudFrontCreateInvalidation = promisify(
+const s3DeleteObjects: (
+    params: AWS.S3.DeleteObjectsRequest
+) => Promise<AWS.S3.DeleteObjectsOutput> = promisify(s3.deleteObjects).bind(s3);
+
+const s3PutObject: (
+    params: AWS.S3.PutObjectRequest
+) => Promise<AWS.S3.PutObjectOutput> = promisify(s3.putObject).bind(s3);
+
+const cloudFrontCreateInvalidation: (
+    params: AWS.CloudFront.CreateInvalidationRequest
+) => Promise<AWS.CloudFront.CreateInvalidationResult> = promisify(
     cloudfront.createInvalidation
 ).bind(cloudfront);
 
-const cloudFrontGetInvalidation = promisify(cloudfront.getInvalidation).bind(
-    cloudfront
-);
+const cloudFrontGetInvalidation: (
+    params: AWS.CloudFront.GetInvalidationRequest
+) => Promise<AWS.CloudFront.GetInvalidationResult> = promisify(
+    cloudfront.getInvalidation
+).bind(cloudfront);
 
 runDeploy().catch(error => console.error(error, error.stack));
 
@@ -77,7 +89,7 @@ function readConfig() {
 
     if (
         Object.keys(credentials).every(key => {
-            return credentials[key].length > 0;
+            return credentials[key as keyof typeof credentials].length > 0;
         })
     ) {
         return credentials;
@@ -88,22 +100,35 @@ function readConfig() {
 async function cleanBucket(bucket: string) {
     const {Contents} = await s3ListObjects({Bucket: bucket});
 
-    const objectsToDelete = Contents.map(object => object.Key).map(key => ({
-        Key: key,
-    }));
+    if (Contents) {
+        const objectsToDelete = Contents.map(object => object.Key).map(key => ({
+            Key: key,
+        }));
 
-    if (objectsToDelete.length > 0) {
-        const {Deleted, Errors} = await s3DeleteObjects({
-            Bucket: bucket,
-            Delete: {Objects: objectsToDelete},
-        });
+        if (objectsToDelete.length > 0) {
+            const {Deleted, Errors} = await s3DeleteObjects({
+                Bucket: bucket,
+                Delete: {Objects: objectsToDelete},
+            });
 
-        Deleted.forEach(object => console.log(chalk.red(" - " + object.Key)));
-        Errors.forEach(object => console.log(chalk.red(" * " + object)));
+            if (Deleted) {
+                Deleted.forEach(object =>
+                    console.log(chalk.red(" - " + object.Key))
+                );
+            }
+
+            if (Errors) {
+                Errors.forEach(object =>
+                    console.log(chalk.red(" * " + object))
+                );
+            }
+        }
+    } else {
+        throw new Error();
     }
 }
 
-async function recursivelyUpload(directory: string) {
+async function recursivelyUpload(directory: string): Promise<any> {
     const directoryPath = path.resolve(directory);
     const paths = fs.readdirSync(directoryPath);
 
@@ -125,10 +150,11 @@ async function uploadFile(filePath: string) {
     // tslint:disable-next-line: no-magic-numbers
     const oneWeekInSec = 60 * 60 * 24 * 7;
     const result = await s3PutObject({
+        Bucket: awsCredentials.bucket,
         Key: key,
         Body: fs.readFileSync(filePath),
         ACL: "public-read",
-        ContentType: mimeType,
+        ContentType: mimeType as string,
         CacheControl: `max-age=${process.env.AWS_CACHE_CONTROL ||
             oneWeekInSec}`,
     });
@@ -149,7 +175,7 @@ async function runAndVerifyInvalidation(distributionId: string) {
     const result = await invalidate(distributionId);
     const oneSec = 1000;
 
-    if (result.Invalidation.Status !== "Completed") {
+    if (result.Invalidation && result.Invalidation.Status !== "Completed") {
         process.stdout.write(
             "waiting for cdn cache invalidation to complete..."
         );
@@ -166,10 +192,11 @@ async function runAndVerifyInvalidation(distributionId: string) {
         }
         process.stdout.write(
             ` done (${Math.round(
-                // tslint:disable-next-line: no-magic-numbers
                 (new Date().getTime() - startTime.getTime()) / oneSec
             )}s)\n`
         );
+    } else {
+        throw new Error();
     }
 }
 
@@ -188,9 +215,14 @@ async function invalidate(distributionId: string) {
 }
 
 async function checkInvalidation(distributionId: string, id: string) {
-    const {Status} = await cloudFrontGetInvalidation({
+    const {Invalidation} = await cloudFrontGetInvalidation({
         DistributionId: distributionId,
         Id: id,
     });
-    return Status;
+
+    if (Invalidation) {
+        return Invalidation.Status;
+    }
+
+    throw new Error();
 }
