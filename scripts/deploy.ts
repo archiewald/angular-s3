@@ -125,19 +125,20 @@ async function cleanBucket(bucket: string) {
     }
 }
 
-// tslint:disable-next-line: no-any
-async function recursivelyUpload(directory: string): Promise<any> {
+async function recursivelyUpload(directory: string): Promise<void> {
     const directoryPath = path.resolve(directory);
     const paths = fs.readdirSync(directoryPath);
 
-    return Promise.all(
+    await Promise.all(
         paths.map(async fileName => {
             const filePath = path.join(directoryPath, fileName);
             const isDirectory = fs.lstatSync(filePath).isDirectory();
 
-            return isDirectory
-                ? recursivelyUpload(directory + "/" + fileName)
-                : uploadFile(filePath);
+            if (isDirectory) {
+                await recursivelyUpload(directory + "/" + fileName);
+            } else {
+                await uploadFile(filePath);
+            }
         })
     );
 }
