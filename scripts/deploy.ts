@@ -10,7 +10,7 @@ import * as mime from "mime-types";
 import * as path from "path";
 import {promisify} from "util";
 
-const wait = (delay = 100) =>
+const wait = async (delay = 100) =>
     new Promise(resolve => setTimeout(resolve, delay));
 
 const awsCredentials = readConfig();
@@ -100,35 +100,33 @@ function readConfig() {
 async function cleanBucket(bucket: string) {
     const {Contents} = await s3ListObjects({Bucket: bucket});
 
-    if (Contents) {
-        const objectsToDelete = Contents.map(object => object.Key).map(key => ({
-            Key: key,
-        }));
+    if (!Contents) {
+        throw new Error("Couldn't get S3 object");
+    }
 
-        if (objectsToDelete.length > 0) {
-            const {Deleted, Errors} = await s3DeleteObjects({
-                Bucket: bucket,
-                Delete: {Objects: objectsToDelete},
-            });
+    const objectsToDelete = Contents.map(object => object.Key).map(key => ({
+        Key: key as string,
+    }));
 
-            if (Deleted) {
-                Deleted.forEach(object =>
-                    console.log(chalk.red(" - " + object.Key))
-                );
-            }
+    if (objectsToDelete.length > 0) {
+        const {Deleted, Errors} = await s3DeleteObjects({
+            Bucket: bucket,
+            Delete: {Objects: objectsToDelete},
+        });
 
-            if (Errors) {
-                Errors.forEach(object =>
-                    console.log(chalk.red(" * " + object))
-                );
-            }
+        if (Deleted) {
+            Deleted.forEach(object =>
+                console.log(chalk.red(" - " + object.Key))
+            );
         }
-    } else {
-        throw new Error();
+
+        if (Errors) {
+            Errors.forEach(object => console.log(chalk.red(" * " + object)));
+        }
     }
 }
 
-async function recursivelyUpload(directory: string): Promise<any> {
+async function recursivelyUpload(directory: string): typeof uploadFile {
     const directoryPath = path.resolve(directory);
     const paths = fs.readdirSync(directoryPath);
 
