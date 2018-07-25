@@ -1,4 +1,3 @@
-// TODO: clean up types
 /* tslint:disable: no-console */
 
 import * as AWS from "aws-sdk";
@@ -126,12 +125,13 @@ async function cleanBucket(bucket: string) {
     }
 }
 
-async function recursivelyUpload(directory: string): typeof uploadFile {
+// tslint:disable-next-line: no-any
+async function recursivelyUpload(directory: string): Promise<any> {
     const directoryPath = path.resolve(directory);
     const paths = fs.readdirSync(directoryPath);
 
     return Promise.all(
-        paths.map(fileName => {
+        paths.map(async fileName => {
             const filePath = path.join(directoryPath, fileName);
             const isDirectory = fs.lstatSync(filePath).isDirectory();
 
