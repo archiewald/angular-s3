@@ -7,9 +7,15 @@
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
+    "lint:scripts": "tslint --project . 'scripts/**/*.ts'",
     "e2e": "ng e2e",
     "deploy": "ng build && ts-node scripts/deploy.ts",
     "deploy-no-build": "ts-node scripts/deploy.ts"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint && npm run lint:scripts"
+    }
   },
   "private": true,
   "dependencies": {
@@ -45,6 +51,7 @@
     "@types/jasminewd2": "~2.0.3",
     "@types/node": "~8.9.4",
     "codelyzer": "~4.2.1",
+    "husky": "^1.0.0-rc.13",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "~1.7.1",
@@ -58,6 +65,7 @@
     "tslint": "~5.9.1",
     "tslint-angular": "^1.1.2",
     "tslint-config-prettier": "^1.14.0",
-    "typescript": "~2.7.2"
+    "typescript": "~2.7.2",
+    "vrsource-tslint-rules": "^5.8.2"
   }
 }
