@@ -1,4 +1,4 @@
-<div *ngIf="hero">
+<div *ngIf="hero; else showLoader">
   <h2>{{ hero.name | uppercase }} Details</h2>
   <div>
     <span>id: </span>{{ hero.id }}
@@ -9,3 +9,6 @@
     </label>
   </div>
 </div>
+<ng-template #showLoader>
+  <app-loader></app-loader>
+</ng-template>

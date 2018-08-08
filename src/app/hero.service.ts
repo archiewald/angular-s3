@@ -17,6 +17,13 @@ export class HeroService {
         // tslint:disable-next-line:no-magic-numbers
         return of(HEROES).pipe(delay(1000));
     }
+
+    getHero(id: number): Observable<Hero | undefined> {
+        // TODO: send the message _after_ fetching the hero
+        this.messageService.add(`HeroService: fetched hero id=${id}`);
+        // tslint:disable-next-line:no-magic-numbers
+        return of(HEROES.find(hero => hero.id === id)).pipe(delay(1000));
+    }
 }
 
 // foo() {
