@@ -1,39 +1,61 @@
+import {HttpClient} from "@angular/common/http";
 import {Injectable} from "@angular/core";
 import {Observable, of} from "rxjs";
-import {delay} from "rxjs/operators";
+import {catchError, tap} from "rxjs/operators";
 
 import {Hero} from "./hero";
 import {MessageService} from "./message.service";
-import {HEROES} from "./mock-heroes";
 
 @Injectable({
     providedIn: "root",
 })
 export class HeroService {
-    constructor(private messageService: MessageService) {}
+    constructor(
+        private http: HttpClient,
+        private messageService: MessageService
+    ) {}
 
-    getHeroes(): Observable<Hero[]> {
-        this.messageService.add("HeroService: fetched heroes");
-        // tslint:disable-next-line:no-magic-numbers
-        return of(HEROES).pipe(delay(1000));
+    private heroesUrl = "api/heroes";
+
+    private log(message: string) {
+        this.messageService.add(`HeroService: ${message}`);
     }
 
-    getHero(id: number): Observable<Hero | undefined> {
-        // TODO: send the message _after_ fetching the hero
-        this.messageService.add(`HeroService: fetched hero id=${id}`);
-        // tslint:disable-next-line:no-magic-numbers
-        return of(HEROES.find(hero => hero.id === id)).pipe(delay(1000));
+    /**
+     * Handle Http operation that failed.
+     * Let the app continue.
+     * @param operation - name of the operation that failed
+     * @param result - optional value to return as the observable result
+     */
+    private handleError<T>(operation = "operation", result?: T) {
+        // tslint:disable-next-line:no-any
+        return (error: any): Observable<T> => {
+            // TODO: send the error to remote logging infrastructure
+            // tslint:disable-next-line:no-console
+            console.error(error); // log to console instead
+
+            // TODO: better job of transforming error for user consumption
+            this.log(`${operation} failed: ${error.message}`);
+
+            // Let the app keep running by returning an empty result.
+            return of(result as T);
+        };
+    }
+
+    /** GET heroes from the server */
+    getHeroes(): Observable<Hero[]> {
+        return this.http.get<Hero[]>(this.heroesUrl).pipe(
+            tap(() => this.log("fetched heroes")),
+            catchError(this.handleError("getHeroes", []))
+        );
+    }
+
+    /** GET hero by id. Will 404 if id not found */
+    getHero(id: number): Observable<Hero> {
+        const url = `${this.heroesUrl}/${id}`;
+        return this.http.get<Hero>(url).pipe(
+            tap(() => this.log(`fetched hero id=${id}`)),
+            catchError(this.handleError<Hero>(`getHero id=${id}`))
+        );
     }
 }
-
-// foo() {
-//     this.getHeroes().subscribe((data) => {
-//         console.log(data);
-//     })
-// }
-
-// async function wait(timeInMs: number): Promise<void> {
-//     setTimeout(() => {
-//         return;
-//     }, timeInMs);
-// }
