@@ -64,12 +64,10 @@ export class HeroService {
     }
 
     /** PUT: update the hero on the server */
-    // tslint:disable-next-line:no-any
-    updateHero(hero: Hero): Observable<any> {
-        return this.http.put(this.heroesUrl, hero, httpOptions).pipe(
-            tap(_ => this.log(`updated hero id=${hero.id}`)),
-            // tslint:disable-next-line:no-any
-            catchError(this.handleError<any>("updateHero"))
+    updateHero(hero: Hero): Observable<Hero | null> {
+        return this.http.put<Hero>(this.heroesUrl, hero, httpOptions).pipe(
+            tap(() => this.log(`updated hero id=${hero.id}`)),
+            catchError(this.handleError<null>("updateHero", null))
         );
     }
 }

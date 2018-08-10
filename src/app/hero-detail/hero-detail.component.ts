@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from "@angular/core";
+import {Component, OnInit} from "@angular/core";
 
 import {Location} from "@angular/common";
 import {ActivatedRoute} from "@angular/router";
@@ -12,7 +12,8 @@ import {HeroService} from "../hero.service";
     styleUrls: ["./hero-detail.component.css"],
 })
 export class HeroDetailComponent implements OnInit {
-    @Input() hero?: Hero;
+    hero?: Hero;
+    showLoader = false;
 
     constructor(
         private route: ActivatedRoute,
@@ -25,9 +26,13 @@ export class HeroDetailComponent implements OnInit {
     }
 
     getHero(): void {
+        this.showLoader = true;
         // tslint:disable-next-line:no-non-null-assertion
         const id = +this.route.snapshot.paramMap.get("id")!;
-        this.heroService.getHero(id).subscribe(hero => (this.hero = hero));
+        this.heroService.getHero(id).subscribe(hero => {
+            this.hero = hero;
+            this.showLoader = false;
+        });
     }
 
     goBack(): void {

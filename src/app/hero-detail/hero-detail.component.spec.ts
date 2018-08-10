@@ -1,25 +1,34 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import {HttpClientTestingModule} from "@angular/common/http/testing";
+import {async, ComponentFixture, TestBed} from "@angular/core/testing";
+import {FormsModule} from "@angular/forms";
+import {RouterTestingModule} from "@angular/router/testing";
 
-import { HeroDetailComponent } from './hero-detail.component';
+import {LoaderComponent} from "../utils/loader/loader.component";
 
-describe('HeroDetailComponent', () => {
-  let component: HeroDetailComponent;
-  let fixture: ComponentFixture<HeroDetailComponent>;
+import {HeroDetailComponent} from "./hero-detail.component";
 
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ HeroDetailComponent ]
-    })
-    .compileComponents();
-  }));
+describe("HeroDetailComponent", () => {
+    let component: HeroDetailComponent;
+    let fixture: ComponentFixture<HeroDetailComponent>;
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(HeroDetailComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    beforeEach(async(() => {
+        TestBed.configureTestingModule({
+            declarations: [HeroDetailComponent, LoaderComponent],
+            imports: [
+                HttpClientTestingModule,
+                FormsModule,
+                RouterTestingModule,
+            ],
+        }).compileComponents();
+    }));
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    beforeEach(() => {
+        fixture = TestBed.createComponent(HeroDetailComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => {
+        expect(component).toBeTruthy();
+    });
 });
