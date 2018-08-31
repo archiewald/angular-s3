@@ -19,8 +19,4 @@ describe("HeroesComponent", () => {
         const component = fixture.componentInstance;
         expect(component).toBeTruthy();
     });
-
-    // it("should display Hero name", () => {});
-
-    // it("should change Hero name on input change", () => {});
 });

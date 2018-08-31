@@ -9,17 +9,12 @@ import {DashboardComponent} from "./dashboard.component";
 describe("DashboardComponent", () => {
     let component: DashboardComponent;
     let fixture: ComponentFixture<DashboardComponent>;
-    // let httpClient: HttpClient;
-    // let httpTestingController: HttpTestingController;
 
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             declarations: [DashboardComponent, LoaderComponent],
             imports: [RouterTestingModule, HttpClientTestingModule],
         }).compileComponents();
-
-        // httpClient = TestBed.get(HttpClient);
-        // httpTestingController = TestBed.get(HttpTestingController);
     }));
 
     beforeEach(() => {
