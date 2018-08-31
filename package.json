@@ -30,6 +30,7 @@
     "@angular/router": "^6.0.3",
     "@types/dotenv": "^4.0.3",
     "@types/mime-types": "^2.1.0",
+    "angular-in-memory-web-api": "^0.6.1",
     "aws-sdk": "^2.277.1",
     "chalk": "^2.4.1",
     "core-js": "^2.5.4",
