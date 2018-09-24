@@ -47,4 +47,17 @@ describe("HeroService", () => {
             .subscribe(heroes => expect(heroes).toEqual(testHeroes), fail);
         expect(httpClientSpy.get.calls.count()).toBe(1, "one call");
     });
+
+    it("should return a testHero on getHero()", () => {
+        const testHero: Hero = {id: 1, name: "Archie"};
+
+        httpClientSpy.get.and.returnValue(of(testHero));
+
+        heroService
+            .getHero(1)
+            .subscribe(hero => expect(hero).toEqual(testHero), fail);
+        expect(httpClientSpy.get.calls.count()).toBe(1, "one call");
+    });
+
+    it("should return a 404 on getHero() if there's no hero with given id", () => {});
 });
