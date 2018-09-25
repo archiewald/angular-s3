@@ -59,5 +59,11 @@ describe("HeroService", () => {
         expect(httpClientSpy.get.calls.count()).toBe(1, "one call");
     });
 
+    // TODO:
+
     it("should return a 404 on getHero() if there's no hero with given id", () => {});
+
+    it("should return an updated hero on updateHero()", () => {});
+
+    it("should return error updateHero() if no hero with such id", () => {});
 });
