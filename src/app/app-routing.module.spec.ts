@@ -1,7 +1,5 @@
-// tslint:disable:no-magic-numbers
-
 import {Location} from "@angular/common";
-import {fakeAsync, TestBed, tick} from "@angular/core/testing";
+import {TestBed} from "@angular/core/testing";
 import {Router} from "@angular/router";
 import {RouterTestingModule} from "@angular/router/testing";
 
@@ -36,21 +34,21 @@ describe("AppRoutingModule with AppModule", () => {
         router.initialNavigation();
     });
 
-    it(
-        'navigate to "" redirects you to /dashboard',
-        fakeAsync(() => {
-            router.navigate([""]);
-            tick(50);
+    it('navigate to "" redirects you to /dashboard', () => {
+        router.navigate([""]).then(() => {
             expect(location.path()).toBe("/dashboard");
-        })
-    );
+        });
+    });
 
-    it(
-        'navigate to "heroes" redirects you to /heroes',
-        fakeAsync(() => {
-            router.navigate(["/heroes"]);
-            tick(50);
+    it('navigate to "heroes" takes you to /heroes', () => {
+        router.navigate(["/heroes"]).then(() => {
             expect(location.path()).toBe("/heroes");
-        })
-    );
+        });
+    });
+
+    it('navigate to "detail/1" takes you to /detail/1', () => {
+        router.navigate(["/detail/1"]).then(() => {
+            expect(location.path()).toBe("/detail/1");
+        });
+    });
 });
