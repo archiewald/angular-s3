@@ -1,18 +1,22 @@
+import {HttpErrorResponse} from "@angular/common/http";
 import {HttpClientTestingModule} from "@angular/common/http/testing";
 import {async, inject, TestBed} from "@angular/core/testing";
-import {of} from "rxjs";
+import {of, throwError} from "rxjs";
 
 import {Hero} from "./hero";
 import {HeroService} from "./hero.service";
 import {MessageService} from "./message.service";
 
 describe("HeroService", () => {
-    let httpClientSpy: {get: jasmine.Spy};
+    let httpClientSpy: {
+        get: jasmine.Spy;
+        put: jasmine.Spy;
+    };
     let heroService: HeroService;
     let messageService: MessageService;
 
     beforeEach(() => {
-        httpClientSpy = jasmine.createSpyObj("HttpClient", ["get"]);
+        httpClientSpy = jasmine.createSpyObj("HttpClient", ["get", "put"]);
         messageService = new MessageService();
         heroService = new HeroService(
             // tslint:disable-next-line:no-any
@@ -45,7 +49,8 @@ describe("HeroService", () => {
         heroService
             .getHeroes()
             .subscribe(heroes => expect(heroes).toEqual(testHeroes), fail);
-        expect(httpClientSpy.get.calls.count()).toBe(1, "one call");
+
+        expect(httpClientSpy.get.calls.allArgs()).toEqual([["api/heroes"]]);
     });
 
     it("should return a testHero on getHero()", () => {
@@ -61,9 +66,38 @@ describe("HeroService", () => {
 
     // TODO:
 
-    it("should return a 404 on getHero() if there's no hero with given id", () => {});
+    // TODO :pass spy to arguments, check what is returned in complete
+    it("getHero() should handle 404", () => {
+        httpClientSpy.get.and.returnValue(
+            throwError(new HttpErrorResponse({status: 404}))
+        );
 
-    it("should return an updated hero on updateHero()", () => {});
+        heroService.getHero(1).subscribe(hero => {
+            expect(hero).toBeUndefined();
+        });
+    });
 
-    it("should return error updateHero() if no hero with such id", () => {});
+    // mock observable, return error
+
+    it("should return an updated hero on updateHero()", () => {
+        const updatedHero: Hero = {id: 1, name: "Edited"};
+
+        httpClientSpy.put.and.returnValue(of(updatedHero));
+
+        heroService
+            .updateHero(updatedHero)
+            .subscribe(hero => expect(hero).toEqual(updatedHero), fail);
+    });
+
+    it("updateHero() should return null if 404", () => {
+        const updatedHero: Hero = {id: 1, name: "Edited"};
+
+        httpClientSpy.put.and.returnValue(
+            throwError(new HttpErrorResponse({status: 404}))
+        );
+
+        heroService
+            .updateHero(updatedHero)
+            .subscribe(hero => expect(hero).toEqual(null), fail);
+    });
 });
