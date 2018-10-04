@@ -25,10 +25,28 @@ describe("HeroDetailComponent", () => {
     beforeEach(() => {
         fixture = TestBed.createComponent(HeroDetailComponent);
         component = fixture.componentInstance;
-        fixture.detectChanges();
     });
 
     it("should create", () => {
         expect(component).toBeTruthy();
     });
+
+    it("should render hero name in uppercase in title", () => {
+        const testHero = {id: 1, name: "Archie"};
+        component.hero = testHero;
+        fixture.detectChanges();
+        const title = fixture.nativeElement.querySelector("h2");
+
+        expect(title.textContent).toContain(testHero.name.toUpperCase());
+    });
+
+    it("should navigate back on goBack()", () => {
+        const location = jasmine.createSpyObj("location", ["back"]);
+
+        component.goBack();
+
+        expect(location.back.calls.any()).toBe(true);
+    });
+
+    it("should call updateHero on save()", () => {});
 });

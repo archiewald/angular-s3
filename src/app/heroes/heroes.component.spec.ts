@@ -36,7 +36,7 @@ describe("HeroesComponent", () => {
         expect(ul).toBeNull();
     });
 
-    it("should show loader", () => {
+    it("should show loader on init", () => {
         // TODO
     });
 
