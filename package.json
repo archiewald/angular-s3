@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
+    "test:ci": "ng test --browser=Headless_Chrome --code-coverage=true --single-run=true",
     "lint": "ng lint",
     "lint:scripts": "tslint --project . 'scripts/**/*.ts'",
     "e2e": "ng e2e",

@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'zenika/alpine-chrome:with-node'
-            args '--entrypoint=""' // set user to root
+            args '-u 0:0 --entrypoint=""' // set user to root
         }
     }
     environment {
@@ -18,7 +18,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Testing..'
-                sh "npm run test"
+                sh "npm run test:ci"
             }
         }
         stage('Deploy') {
