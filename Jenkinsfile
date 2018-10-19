@@ -9,12 +9,6 @@ pipeline {
       CI = 'true'
     }
     stages {
-        stage('check') {
-            steps {
-                echo 'Building..'
-                sh "npm --version"
-            }
-        }
         stage('Build') {
             steps {
                 echo 'Building..'
