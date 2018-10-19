@@ -12,11 +12,6 @@
     "deploy": "ng build && ts-node scripts/deploy.ts",
     "deploy-no-build": "ts-node scripts/deploy.ts"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint && npm run lint:scripts"
-    }
-  },
   "private": true,
   "dependencies": {
     "@angular/animations": "^6.0.3",
