@@ -2,8 +2,11 @@ pipeline {
     agent {
         docker {
             image 'node:8-alpine'
-            args '-u 0:0'
+            args '-u 0:0' // set user to root
         }
+    }
+    environment {
+      CI = 'true'
     }
     stages {
         stage('check') {
@@ -21,7 +24,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Testing..'
-                sh "ng test — single-run true"
+                sh "npm run test"
             }
         }
         stage('Deploy') {
