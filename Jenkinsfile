@@ -3,6 +3,12 @@ pipeline {
         docker { image 'node:7-alpine' }
     }
     stages {
+        stage('check') {
+            steps {
+                echo 'Building..'
+                sh "npm --version"
+            }
+        }
         stage('Build') {
             steps {
                 echo 'Building..'
