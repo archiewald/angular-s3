@@ -15,15 +15,21 @@ pipeline {
                 sh "npm install"
             }
         }
-        stage('Test') {
+        stage('Unit Tests') {
             steps {
                 echo 'Testing..'
                 sh "npm run test:ci"
             }
         }
+        stage('e2e Tests') {
+            steps {
+                echo 'Testing..'
+                sh "npm run e2e"
+            }
+        }
         stage('Deploy') {
             steps {
-                echo 'Deploying....'
+                echo 'Deploying....TODO'
             }
         }
     }
