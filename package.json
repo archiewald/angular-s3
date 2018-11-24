@@ -10,6 +10,7 @@
     "lint": "ng lint",
     "lint:scripts": "tslint --project . 'scripts/**/*.ts'",
     "e2e": "ng e2e",
+    "e2e:ci": "ng e2e --protractorConfig=e2e/protractor.e2e.conf.js",
     "deploy": "ng build && ts-node scripts/deploy.ts",
     "deploy-no-build": "ts-node scripts/deploy.ts"
   },
