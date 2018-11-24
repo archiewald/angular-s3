@@ -9,7 +9,7 @@ exports.config = {
     capabilities: {
         browserName: "chrome",
         chromeOptions: {
-            args: ["--no-sandbox", "--headless", "--window-size=1024,768"],
+            args: ["--headless", "--disable-gpu", "--window-size=800x600"],
         },
     },
     directConnect: true,
@@ -20,10 +20,12 @@ exports.config = {
         defaultTimeoutInterval: 30000,
         print: function() {},
     },
-    onPrepare() {
+    beforeLaunch: function() {
         require("ts-node").register({
             project: require("path").join(__dirname, "./tsconfig.e2e.json"),
         });
+    },
+    onPrepare() {
         jasmine
             .getEnv()
             .addReporter(new SpecReporter({spec: {displayStacktrace: true}}));
