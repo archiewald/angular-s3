@@ -1,14 +1,23 @@
-import { AppPage } from './app.po';
+import {browser, by, element} from "protractor";
 
-describe('workspace-project App', () => {
-  let page: AppPage;
+import {AppPage} from "./app.po";
 
-  beforeEach(() => {
-    page = new AppPage();
-  });
+describe("workspace-project App", () => {
+    let page: AppPage;
 
-  it('should display welcome message', () => {
-    page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Welcome to angular-s3!');
-  });
+    beforeEach(() => {
+        page = new AppPage();
+    });
+
+    it("should display a title ", () => {
+        page.navigateTo();
+        browser.pause();
+        expect(page.getParagraphText()).toEqual("Tour of Heroes!");
+    });
+
+    it("click on heroes link should navigate to heroes list", () => {
+        const heroesLink = element(by.linkText("Heroes"));
+        heroesLink.click();
+        expect(browser.getCurrentUrl()).toEqual(browser.baseUrl + "/heroes");
+    });
 });
