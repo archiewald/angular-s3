@@ -17,13 +17,13 @@ pipeline {
         }
         stage('Unit Tests') {
             steps {
-                echo 'Testing..'
+                echo 'Unit testing..'
                 sh "npm run test:ci"
             }
         }
         stage('e2e Tests') {
             steps {
-                echo 'Testing..'
+                echo 'e2e testing..'
                 sh "npm run e2e"
             }
         }
